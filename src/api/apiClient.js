@@ -2,17 +2,22 @@ import { createAuthClient } from "better-auth/react";
 import { emailOTPClient } from "better-auth/client/plugins";
 
 const authClient = createAuthClient({
+  baseURL: "http://localhost:3000",
   plugins: [emailOTPClient()],
 });
 
 async function apiRequest(path, options = {}) {
   const res = await fetch(`/api/entities/${path}`, {
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     ...options,
   });
 
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) {
+    throw new Error(await res.text());
+  }
 
   return res.status === 204 ? null : res.json();
 }
@@ -20,6 +25,20 @@ async function apiRequest(path, options = {}) {
 function makeEntity(tableName) {
   return {
     list: (query = "") => apiRequest(`${tableName}${query ? `?${query}` : ""}`),
+
+    // query: plain object of field -> value, e.g. { quarter_id: "abc" }.
+    // sort: optional field name, prefix with "-" for descending
+    // (matches the existing list() sort convention).
+    filter: (query = {}, sort, limit) => {
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(query || {})) {
+        if (v !== undefined && v !== null) params.set(k, v);
+      }
+      if (sort) params.set(sort, "");
+      if (limit) params.set("limit", limit);
+      const qs = params.toString();
+      return apiRequest(`${tableName}${qs ? `?${qs}` : ""}`);
+    },
 
     get: (id) => apiRequest(`${tableName}/${id}`),
 
@@ -32,7 +51,9 @@ function makeEntity(tableName) {
     bulkCreate: (records) =>
       apiRequest(`${tableName}/bulk`, {
         method: "POST",
-        body: JSON.stringify({ records }),
+        body: JSON.stringify({
+          records,
+        }),
       }),
 
     update: (id, data) =>
@@ -49,7 +70,9 @@ function makeEntity(tableName) {
     deleteMany: (filter = {}) =>
       apiRequest(`${tableName}/bulk-delete`, {
         method: "POST",
-        body: JSON.stringify({ filter }),
+        body: JSON.stringify({
+          filter,
+        }),
       }),
   };
 }
@@ -98,7 +121,15 @@ export const api = {
         type: "email-verification",
       }),
 
-    updateMe: (data) => authClient.updateUser(data),
+    updateMe: (data) =>
+      authClient.updateUser({
+        theme: data.theme,
+        primary: data.primary,
+        font: data.font,
+        radius: data.radius,
+        timezone: data.timezone,
+        onboarded: data.onboarded,
+      }),
 
     logout: () => authClient.signOut(),
 

@@ -17,6 +17,21 @@ export const qk = {
   activities: (qid) => ["activities", qid],
 };
 
+// Postgres DATE columns can come back as plain "yyyy-MM-dd" strings or as
+// full ISO timestamps ("2026-07-01T00:00:00.000Z") depending on the driver.
+// Normalize to "yyyy-MM-dd" before ever comparing dates as strings.
+function normalizeDateStr(d) {
+  if (!d) return d;
+  if (typeof d === "string") return d.slice(0, 10);
+  return format(new Date(d), "yyyy-MM-dd");
+}
+
+// Optimistic-create rows get a temporary client-side id until the server
+// responds with the real one. Never let a temp id reach the network.
+function isTempId(id) {
+  return typeof id === "string" && id.startsWith("temp_");
+}
+
 export function useQuarters() {
   return useQuery({
     queryKey: qk.quarters,
@@ -50,7 +65,17 @@ export function useGoals(qid) {
 export function useActivities(qid) {
   return useQuery({
     queryKey: qk.activities(qid),
-    queryFn: async () => Activity.filter({ quarter_id: qid }),
+    queryFn: async () => {
+      const rows = await Activity.filter({ quarter_id: qid });
+      // `date` must be a plain "yyyy-MM-dd" string — buildDayMap() and every
+      // dayKey()/todayKey() lookup depend on exact string equality. If the
+      // DB driver ever returns a full ISO timestamp instead, normalize it
+      // here so activities don't silently vanish from the day-bucketed view.
+      return (rows || []).map((a) => ({
+        ...a,
+        date: normalizeDateStr(a.date),
+      }));
+    },
     enabled: !!qid,
   });
 }
@@ -64,6 +89,9 @@ function useInvalidate() {
 // sure an active quarter exists for the current calendar quarter; if the
 // stored active quarter belongs to a past calendar quarter, roll it to
 // completed and start a fresh empty one. Runs once per app load.
+//
+// Matches by normalized date range (start_date/end_date), not by `name` or
+// raw string equality.
 export function useEnsureActiveQuarter() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -80,7 +108,13 @@ export function useEnsureActiveQuarter() {
         const actives = quarters.filter((q) => q.status === "active");
         const now = new Date();
         const cal = calendarQuarterFor(now);
-        const matching = actives.find((q) => q.name === cal.name);
+        const calStart = format(cal.start, "yyyy-MM-dd");
+        const calEnd = format(cal.end, "yyyy-MM-dd");
+        const matching = actives.find(
+          (q) =>
+            normalizeDateStr(q.start_date) === calStart &&
+            normalizeDateStr(q.end_date) === calEnd,
+        );
         if (matching) {
           const stray = actives.filter((q) => q.id !== matching.id);
           if (stray.length) {
@@ -95,8 +129,8 @@ export function useEnsureActiveQuarter() {
           const appearance = readAppearance(user);
           await Quarter.create({
             name: cal.name,
-            start_date: format(cal.start, "yyyy-MM-dd"),
-            end_date: format(cal.end, "yyyy-MM-dd"),
+            start_date: calStart,
+            end_date: calEnd,
             status: "active",
             theme: appearance.theme,
             accent_color: appearance.primary,
@@ -130,8 +164,14 @@ export function useDeleteQuarter() {
 export function useSaveGoal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data, quarter_id }) =>
-      id ? Goal.update(id, data) : Goal.create({ ...data, quarter_id }),
+    mutationFn: async ({ id, data, quarter_id }) => {
+      if (id && isTempId(id)) {
+        throw new Error(
+          "This goal is still being created — try again in a moment.",
+        );
+      }
+      return id ? Goal.update(id, data) : Goal.create({ ...data, quarter_id });
+    },
     onMutate: async ({ id, data, quarter_id }) => {
       const key = qk.goals(quarter_id);
       await qc.cancelQueries({ queryKey: key });
@@ -162,7 +202,14 @@ export function useSaveGoal() {
 export function useDeleteGoal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, quarter_id }) => Goal.delete(id),
+    mutationFn: async ({ id, quarter_id }) => {
+      if (isTempId(id)) {
+        throw new Error(
+          "This goal is still being created — try again in a moment.",
+        );
+      }
+      return Goal.delete(id);
+    },
     onMutate: async ({ id, quarter_id }) => {
       const key = qk.goals(quarter_id);
       await qc.cancelQueries({ queryKey: key });
@@ -182,8 +229,16 @@ export function useDeleteGoal() {
 export function useSaveActivity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, data, quarter_id }) =>
-      id ? Activity.update(id, data) : Activity.create({ ...data, quarter_id }),
+    mutationFn: async ({ id, data, quarter_id }) => {
+      if (id && isTempId(id)) {
+        throw new Error(
+          "This activity is still being created — try again in a moment.",
+        );
+      }
+      return id
+        ? Activity.update(id, data)
+        : Activity.create({ ...data, quarter_id });
+    },
     onMutate: async ({ id, data, quarter_id }) => {
       const key = qk.activities(quarter_id);
       await qc.cancelQueries({ queryKey: key });
@@ -214,11 +269,17 @@ export function useSaveActivity() {
 export function useToggleActivity(quarter_id) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, completed }) =>
-      Activity.update(id, {
+    mutationFn: async ({ id, completed }) => {
+      if (isTempId(id)) {
+        throw new Error(
+          "This activity is still being created — try again in a moment.",
+        );
+      }
+      return Activity.update(id, {
         completed,
         completed_date: completed ? new Date().toISOString() : null,
-      }),
+      });
+    },
     onMutate: async ({ id, completed }) => {
       const key = qk.activities(quarter_id);
       await qc.cancelQueries({ queryKey: key });
@@ -246,7 +307,14 @@ export function useToggleActivity(quarter_id) {
 export function useDeleteActivity() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, quarter_id }) => Activity.delete(id),
+    mutationFn: async ({ id, quarter_id }) => {
+      if (isTempId(id)) {
+        throw new Error(
+          "This activity is still being created — try again in a moment.",
+        );
+      }
+      return Activity.delete(id);
+    },
     onMutate: async ({ id, quarter_id }) => {
       const key = qk.activities(quarter_id);
       await qc.cancelQueries({ queryKey: key });

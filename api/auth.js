@@ -1,15 +1,31 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "@neondatabase/serverless";
 import { Resend } from "resend";
-import { toNodeHandler } from "better-auth/node";
 import { emailOTP } from "better-auth/plugins";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const auth = betterAuth({
-  database: new Pool({ connectionString: process.env.DATABASE_URL }),
+  database: new Pool({
+    connectionString: process.env.DATABASE_URL,
+  }),
+
+  baseURL: process.env.BETTER_AUTH_URL,
+
+  user: {
+    additionalFields: {
+      theme: { type: "string", required: false },
+      primary: { type: "string", required: false, fieldName: "primary_color" },
+      font: { type: "string", required: false },
+      radius: { type: "string", required: false },
+      timezone: { type: "string", required: false },
+      onboarded: { type: "boolean", required: false, defaultValue: false },
+    },
+  },
+
   emailAndPassword: {
     enabled: true,
+
     sendResetPassword: async ({ user, url }) => {
       await resend.emails.send({
         from: "no-reply@aniekan.dev",
@@ -19,9 +35,11 @@ export const auth = betterAuth({
       });
     },
   },
+
   emailVerification: {
     autoSignInAfterVerification: true,
   },
+
   plugins: [
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
@@ -36,6 +54,7 @@ export const auth = betterAuth({
       },
     }),
   ],
+
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID,
@@ -44,4 +63,17 @@ export const auth = betterAuth({
   },
 });
 
-export default toNodeHandler(auth);
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+
+    const originalPath = url.searchParams.get("path");
+
+    if (originalPath) {
+      url.pathname = `/api/auth/${originalPath}`;
+      url.searchParams.delete("path");
+    }
+
+    return auth.handler(new Request(url.toString(), request));
+  },
+};
