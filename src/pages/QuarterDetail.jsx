@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import { parseISO } from "date-fns";
-import { ArrowLeft, ScrollText, Check, Target } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { ArrowLeft, ScrollText } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import {
   useQuarters,
@@ -15,7 +15,6 @@ import {
   activityCompletion,
   dayClassifications,
   todayKey,
-  fmtDate,
   quarterDayCount,
   pct,
 } from "@/lib/quarterUtils";
@@ -23,9 +22,9 @@ import QuarterGrid from "@/components/QuarterGrid";
 import DayInspector from "@/components/DayInspector";
 import QuarterComparison from "@/components/QuarterComparison";
 import SummaryDialog from "@/components/SummaryDialog";
-import StatCard from "@/components/StatCard";
+import StatStrip from "@/components/StatStrip";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export default function QuarterDetail() {
@@ -77,48 +76,43 @@ export default function QuarterDetail() {
   const selKey = selectedKey || (inProgress ? today : quarter.start_date);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Link
-          to="/past-quarters"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4" /> Past Quarters
-        </Link>
-        <Button variant="outline" onClick={() => setSummaryOpen(true)}>
-          <ScrollText className="mr-1 h-4 w-4" /> View summary
-        </Button>
-      </div>
+    <div className="space-y-6 sm:space-y-8">
+      <Link
+        to="/past-quarters"
+        className="-ml-1 inline-flex items-center gap-1 rounded-md px-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Past quarters
+      </Link>
 
-      <header>
-        <div className="flex items-center gap-2">
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
-            {quarter.name}
-          </h1>
-          <Badge
-            variant={inProgress ? "default" : "secondary"}
-            className={inProgress ? "bg-primary text-primary-foreground" : ""}
-          >
-            {inProgress ? "In progress" : "Completed"}
-          </Badge>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          {fmtDate(parseISO(quarter.start_date))} –{" "}
-          {fmtDate(parseISO(quarter.end_date))} · {totalDays} days
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={inProgress ? "In progress" : "Completed"}
+        title={quarter.name}
+        meta={
+          <span className="tabular-nums">
+            {format(parseISO(quarter.start_date), "MMM d")} –{" "}
+            {format(parseISO(quarter.end_date), "MMM d, yyyy")} · {totalDays}{" "}
+            days
+          </span>
+        }
+        actions={
+          <Button variant="outline" onClick={() => setSummaryOpen(true)}>
+            <ScrollText className="h-4 w-4" /> Summary
+          </Button>
+        }
+      />
 
-      <section className="surface-card p-5">
-        <h2 className="mb-4 text-base font-semibold">90-Day Timeline</h2>
-        <QuarterGrid
-          quarter={quarter}
-          dayMap={dayMap}
-          accent={accent}
-          todayKeyStr={today}
-          selectedKey={selKey}
-          onSelect={setSelectedKey}
-        />
-        <div className="mt-4">
+      <section className="surface-card p-5 sm:p-6">
+        <h2 className="section-title mb-4">The 90 days</h2>
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start">
+          <QuarterGrid
+            quarter={quarter}
+            dayMap={dayMap}
+            accent={accent}
+            todayKeyStr={today}
+            selectedKey={selKey}
+            onSelect={setSelectedKey}
+            className="max-w-[34rem]"
+          />
           <DayInspector
             dateKey={selKey}
             dayData={dayMap[selKey]}
@@ -127,77 +121,73 @@ export default function QuarterDetail() {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard
-          label="Day"
-          value={
-            inProgress
+      <StatStrip
+        items={[
+          {
+            label: inProgress ? "Day" : "Length",
+            value: inProgress
               ? `${progress.dayNumber}/${totalDays}`
-              : `${totalDays}/${totalDays}`
-          }
-          accent
-        />
-        <StatCard
-          label="Goals"
-          value={goalsTotal ? `${goalsCompleted}/${goalsTotal}` : "—"}
-          sub={goalsTotal ? `${pct(goalsCompleted / goalsTotal)}%` : ""}
-          accent
-        />
-        <StatCard
-          label="Activity"
-          value={actComp.planned ? `${pct(actComp.rate)}%` : "—"}
-          sub={`${actComp.completed}/${actComp.planned}`}
-          accent
-        />
-        <StatCard label="Perfect days" value={classes.perfect} />
-      </div>
+              : `${totalDays} days`,
+          },
+          {
+            label: "Goals complete",
+            value: goalsTotal ? `${goalsCompleted}/${goalsTotal}` : "—",
+            sub: goalsTotal ? `${pct(goalsCompleted / goalsTotal)}%` : "none set",
+            accent: true,
+          },
+          {
+            label: "Activities done",
+            value: actComp.planned ? `${pct(actComp.rate)}%` : "—",
+            sub: `${actComp.completed} of ${actComp.planned}`,
+            accent: true,
+          },
+          {
+            label: "Perfect days",
+            value: classes.perfect,
+            sub: "everything done",
+          },
+        ]}
+      />
 
-      <section className="surface-card p-5">
-        <div className="flex items-center gap-2">
-          <Target className="h-4 w-4 text-primary" />
-          <h2 className="text-base font-semibold">Goals</h2>
-        </div>
-        <div className="mt-4 space-y-1.5">
+      <section className="surface-card p-5 sm:p-6">
+        <h2 className="section-title">Goals</h2>
+        <ol className="mt-3 divide-y divide-border">
           {goalsTotal === 0 && (
-            <p className="py-6 text-center text-sm text-muted-foreground">
+            <li className="py-6 text-sm text-muted-foreground">
               No goals were set for this quarter.
-            </p>
+            </li>
           )}
-          {goals.map((g) => (
-            <div
-              key={g.id}
-              className="flex items-center gap-3 rounded-lg px-2 py-2"
-            >
-              <span
-                className={cn(
-                  "grid h-5 w-5 place-items-center rounded-full border text-white",
-                  g.status === "completed"
-                    ? "border-transparent bg-primary text-primary-foreground"
-                    : "border-border",
-                )}
-              >
-                {g.status === "completed" && <Check className="h-3 w-3" />}
+          {goals.map((g, i) => (
+            <li key={g.id} className="flex min-h-[3rem] items-center gap-3 py-1.5">
+              <span className="w-5 shrink-0 font-display text-sm tabular-nums text-muted-foreground">
+                {String(i + 1).padStart(2, "0")}
               </span>
               <span
                 className={cn(
-                  "flex-1 text-sm",
-                  (g.status === "completed" || g.status === "abandoned") &&
-                    "text-muted-foreground line-through",
+                  "min-w-0 flex-1 break-words text-[0.95rem]",
+                  g.status === "abandoned" &&
+                    "text-muted-foreground line-through decoration-muted-foreground/50",
                 )}
               >
                 {g.title}
               </span>
-              {g.status === "abandoned" && (
-                <Badge variant="outline">abandoned</Badge>
-              )}
-              {g.status === "completed" && (
-                <Badge className="bg-primary text-primary-foreground">
-                  completed
-                </Badge>
-              )}
-            </div>
+              <span
+                className={cn(
+                  "shrink-0 text-xs",
+                  g.status === "completed"
+                    ? "font-medium text-primary"
+                    : "text-muted-foreground",
+                )}
+              >
+                {g.status === "completed"
+                  ? "Completed"
+                  : g.status === "abandoned"
+                    ? "Abandoned"
+                    : "Not finished"}
+              </span>
+            </li>
           ))}
-        </div>
+        </ol>
       </section>
 
       {prevQuarter && (

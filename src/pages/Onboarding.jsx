@@ -8,7 +8,6 @@ import {
   applyAppearance,
   readAppearance,
   detectTimezone,
-  getAccent,
 } from "@/lib/theme";
 import { calendarQuarterFor } from "@/lib/quarterUtils";
 import { api } from "@/api/apiClient";
@@ -18,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import AppearanceControls from "@/components/AppearanceControls";
 import AppearancePreview from "@/components/AppearancePreview";
 import { cn } from "@/lib/utils";
+import Wordmark from "@/components/Wordmark";
 import { useToast } from "@/components/ui/use-toast";
 
 const STEPS = ["Welcome", "Appearance", "Goals", "Today", "Finish"];
@@ -78,65 +78,61 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-10 text-foreground">
+    <div className="min-h-[100dvh] bg-background px-5 pt-[max(2rem,env(safe-area-inset-top))] text-foreground">
       <div className="mx-auto max-w-2xl">
-        <div className="mb-8">
-          <p className="font-display text-2xl font-semibold tracking-tight">
-            3/6/9
-          </p>
-          <p className="text-xs text-muted-foreground">Onboarding</p>
-        </div>
+        <Wordmark className="text-3xl" />
 
-        <div className="mb-8 flex items-center gap-2">
+        <div className="mb-3 mt-8 flex items-center gap-1.5" aria-hidden="true">
           {STEPS.map((s, i) => (
             <div key={s} className="flex flex-1 items-center gap-2">
               <div
                 className={cn(
-                  "h-1.5 flex-1 rounded-full transition-colors",
+                  "h-1 flex-1 rounded-full transition-colors duration-300",
                   i <= step ? "bg-primary" : "bg-muted",
                 )}
               />
             </div>
           ))}
         </div>
-        <p className="mb-6 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        <p className="mb-8 text-sm text-muted-foreground">
           Step {step + 1} of {STEPS.length} · {STEPS[step]}
         </p>
 
         {step === 0 && (
           <div className="space-y-5">
-            <h1 className="font-display text-3xl font-semibold tracking-tight">
+            <h1 className="font-display text-[2.25rem] font-medium leading-[1.1] tracking-tight sm:text-5xl">
               90 days. A few goals. A few things every day.
             </h1>
-            <p className="text-muted-foreground">
-              Make the quarter count. 3/6/9 helps you plan a focused 90-day
-              quarter, show up daily, and look back on a beautiful record of
-              what you accomplished.
+            <p className="max-w-lg text-muted-foreground">
+              Make the quarter count. Plan a focused 90 days, show up daily,
+              and look back on a record of what you actually did.
             </p>
-            <div className="surface-card p-5 text-sm">
-              <p className="font-medium">The framework</p>
-              <ul className="mt-2 space-y-1 text-muted-foreground">
-                <li>
-                  <b className="text-foreground">3</b> — daily activities (a
-                  recommendation, not a limit)
-                </li>
-                <li>
-                  <b className="text-foreground">6</b> — quarterly goals (a
-                  recommendation, not a limit)
-                </li>
-                <li>
-                  <b className="text-foreground">9</b> — the 90-day quarter
-                  timeline
-                </li>
-              </ul>
-            </div>
+            <dl className="grid grid-cols-3 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card">
+              {[
+                ["3", "things a day"],
+                ["6", "goals a quarter"],
+                ["90", "days to do it"],
+              ].map(([n, label]) => (
+                <div key={n} className="p-4 sm:p-5">
+                  <dt className="font-display text-4xl font-medium leading-none text-primary sm:text-5xl">
+                    {n}
+                  </dt>
+                  <dd className="mt-2 text-sm text-muted-foreground">
+                    {label}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-sm text-muted-foreground">
+              The numbers are a guide, not a limit.
+            </p>
           </div>
         )}
 
         {step === 1 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-semibold">Make it yours</h2>
+              <h2 className="font-display text-[1.75rem] font-medium tracking-tight">Make it yours</h2>
               <p className="text-sm text-muted-foreground">
                 Theme, one color, font, and corners. The preview shows exactly
                 how it'll look.
@@ -148,9 +144,7 @@ export default function Onboarding() {
                 onChange={handleAppearance}
               />
               <div className="md:sticky md:top-6 md:self-start">
-                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Preview
-                </p>
+                <p className="mb-2 text-sm text-muted-foreground">Preview</p>
                 <AppearancePreview value={appearance} />
               </div>
             </div>
@@ -160,8 +154,8 @@ export default function Onboarding() {
         {step === 2 && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-semibold">
-                Set your quarterly goals
+              <h2 className="font-display text-[1.75rem] font-medium tracking-tight">
+                What's this quarter for?
               </h2>
               <p className="text-sm text-muted-foreground">
                 6 is the recommended number — but you can set as few or as many
@@ -182,7 +176,8 @@ export default function Onboarding() {
                   />
                   <button
                     onClick={() => setGoals(goals.filter((_, j) => j !== i))}
-                    className="rounded p-2 text-muted-foreground hover:text-foreground"
+                    className="icon-btn h-10 w-10 shrink-0"
+                    aria-label="Remove"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -202,7 +197,7 @@ export default function Onboarding() {
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-semibold">What's on for today?</h2>
+              <h2 className="font-display text-[1.75rem] font-medium tracking-tight">What's on for today?</h2>
               <p className="text-sm text-muted-foreground">
                 3 activities are recommended. These are just for today — you can
                 plan each day as it comes.
@@ -226,7 +221,8 @@ export default function Onboarding() {
                     onClick={() =>
                       setActivities(activities.filter((_, j) => j !== i))
                     }
-                    className="rounded p-2 text-muted-foreground hover:text-foreground"
+                    className="icon-btn h-10 w-10 shrink-0"
+                    aria-label="Remove"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -245,34 +241,32 @@ export default function Onboarding() {
 
         {step === 4 && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold">You're all set</h2>
+            <h2 className="font-display text-[1.75rem] font-medium tracking-tight">You're all set</h2>
             <p className="text-muted-foreground">
               Your first quarter is ready. Open the dashboard each day, check
               off your activities, and watch your 90-day timeline come to life.
             </p>
             <AppearancePreview value={appearance} />
-            <div className="surface-card p-5 text-sm">
-              <p>
-                <b>Theme:</b>{" "}
-                <span className="capitalize">{appearance.theme}</span> ·{" "}
-                <b>Color:</b> {getAccent(appearance.primary).name}
-              </p>
-              <p>
-                <b>Font:</b> {appearance.font} · <b>Corners:</b>{" "}
-                {appearance.radius}
-              </p>
-              <p>
-                <b>Goals:</b> {goals.filter((g) => g.trim()).length}
-              </p>
-              <p>
-                <b>Today's activities:</b>{" "}
-                {activities.filter((a) => a.trim()).length}
-              </p>
-            </div>
+            <dl className="grid grid-cols-2 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card">
+              <div className="p-4">
+                <dt className="text-sm text-muted-foreground">Goals</dt>
+                <dd className="font-display text-3xl font-medium">
+                  {goals.filter((g) => g.trim()).length}
+                </dd>
+              </div>
+              <div className="p-4">
+                <dt className="text-sm text-muted-foreground">
+                  Planned today
+                </dt>
+                <dd className="font-display text-3xl font-medium">
+                  {activities.filter((a) => a.trim()).length}
+                </dd>
+              </div>
+            </dl>
           </div>
         )}
 
-        <div className="mt-8 flex items-center justify-between">
+        <div className="pb-safe sticky bottom-0 mt-10 flex items-center justify-between gap-3 border-t border-border bg-background/90 py-4 backdrop-blur-lg">
           <Button
             variant="ghost"
             onClick={() => setStep((s) => Math.max(0, s - 1))}

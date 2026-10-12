@@ -1,14 +1,5 @@
 import React, { useState } from "react";
-import {
-  Target,
-  Plus,
-  Pencil,
-  Check,
-  RotateCcw,
-  Ban,
-  Trash2,
-  Flag,
-} from "lucide-react";
+import { Target, Plus, Pencil, Check, RotateCcw, Ban, Trash2 } from "lucide-react";
 import {
   useActiveQuarter,
   useGoals,
@@ -18,8 +9,8 @@ import {
 import { todayKey } from "@/lib/quarterUtils";
 import GoalDialog from "@/components/GoalDialog";
 import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +23,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+
+const STATUS_ORDER = { completed: 0, active: 1, abandoned: 2 };
 
 export default function Goals() {
   const { active } = useActiveQuarter();
@@ -83,6 +76,11 @@ export default function Goals() {
     const patch = { status };
     if (status === "completed") patch.completed_date = todayKey();
     if (status === "abandoned") patch.abandoned_date = todayKey();
+    if (status === "active") {
+      // Reopened or restored: clear the old outcome date.
+      patch.completed_date = null;
+      patch.abandoned_date = null;
+    }
     saveGoal.mutate({ id: g.id, quarter_id: active.id, data: patch });
     if (status === "completed") toast({ title: "Goal completed 🎉" });
   };
@@ -96,164 +94,167 @@ export default function Goals() {
   };
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold tracking-tight">
-            Goals
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {active.name} · 6 is the recommended number — set as few or as many
-            as you like.
-          </p>
-        </div>
-        <Button onClick={openNew}>
-          <Plus className="mr-1 h-4 w-4" /> New goal
-        </Button>
-      </header>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        eyebrow={active.name}
+        title="Goals"
+        meta="Six is the recommended number. Set as few or as many as you like."
+        actions={
+          <Button onClick={openNew}>
+            <Plus className="h-4 w-4" /> New goal
+          </Button>
+        }
+      />
 
-      {/* Summary banner */}
-      <section className="surface-card p-6">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Progress
+      {total > 0 && (
+        <section aria-label="Progress" className="space-y-3">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <p className="text-sm text-muted-foreground tabular-nums">
+              <span className="font-display text-2xl font-medium text-foreground">
+                {completed}
+              </span>{" "}
+              of {total} complete
             </p>
-            <p
-              className="font-display text-3xl font-semibold tracking-tight"
-              style={{ color: "hsl(var(--brand))" }}
-            >
-              {total ? `${completed}/${total}` : "—"}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {total ? `${rate}% complete` : "no goals yet"} · {activeCount}{" "}
-              active{abandoned ? ` · ${abandoned} abandoned` : ""}
+            <p className="text-sm text-muted-foreground tabular-nums">
+              {activeCount} in progress
+              {abandoned ? ` · ${abandoned} abandoned` : ""} · {rate}%
             </p>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-              <span className="h-2.5 w-2.5 rounded-full bg-primary" /> Completed
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-              <span className="h-2.5 w-2.5 rounded-full border border-border" />{" "}
-              Active
-            </span>
-            {abandoned > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-                <span className="h-2.5 w-2.5 rounded-full bg-muted" /> Abandoned
-              </span>
-            )}
+          {/* One segment per goal, so the bar reads as the goals themselves. */}
+          <div className="flex gap-1">
+            {[...list]
+              .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status])
+              .map((g) => (
+                <span
+                  key={g.id}
+                  title={g.title}
+                  className={cn(
+                    "h-1.5 flex-1 rounded-full",
+                    g.status === "completed" && "bg-primary",
+                    g.status === "active" && "bg-muted-foreground/20",
+                    g.status === "abandoned" &&
+                      "bg-[repeating-linear-gradient(135deg,hsl(var(--muted-foreground)/0.25)_0_3px,transparent_3px_6px)]",
+                  )}
+                />
+              ))}
           </div>
-        </div>
-        <div className="mt-4 h-2.5 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${rate}%` }}
-          />
-        </div>
-      </section>
+        </section>
+      )}
 
       {total === 0 ? (
         <EmptyState
           icon={Target}
           title="No goals yet"
-          description="Set your first quarterly goal to give your 90 days direction."
+          description="What would make this quarter a success? Write it down."
           action={
             <Button onClick={openNew}>
-              <Plus className="mr-1 h-4 w-4" /> Add a goal
+              <Plus className="h-4 w-4" /> Add your first goal
             </Button>
           }
         />
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
-          {list.map((g) => (
-            <div key={g.id} className="group surface-card flex flex-col p-5">
-              <div className="flex items-start gap-3">
-                <button
-                  onClick={() =>
-                    g.status === "completed"
-                      ? setStatus(g, "active")
-                      : setStatus(g, "completed")
-                  }
+        <ol className="grid gap-3 md:grid-cols-2">
+          {list.map((g, i) => {
+            const done = g.status === "completed";
+            const dropped = g.status === "abandoned";
+            return (
+              <li
+                key={g.id}
+                className={cn(
+                  "group surface-card flex gap-4 p-5 transition-colors",
+                  dropped && "bg-transparent",
+                )}
+              >
+                <span
                   className={cn(
-                    "mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full border text-primary-foreground transition-colors",
-                    g.status === "completed"
-                      ? "border-transparent bg-primary"
-                      : "border-border hover:border-primary",
+                    "font-display text-[1.75rem] font-medium leading-none tabular-nums",
+                    done ? "text-primary" : "text-muted-foreground/40",
                   )}
-                  aria-label="Toggle complete"
+                  aria-hidden="true"
                 >
-                  {g.status === "completed" && <Check className="h-4 w-4" />}
-                </button>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
                 <div className="min-w-0 flex-1">
                   <p
                     className={cn(
-                      "text-base font-medium leading-snug",
-                      (g.status === "completed" || g.status === "abandoned") &&
-                        "text-muted-foreground line-through",
+                      "break-words text-base font-medium leading-snug",
+                      (done || dropped) &&
+                        "text-muted-foreground line-through decoration-muted-foreground/50",
                     )}
                   >
                     {g.title}
                   </p>
                   {g.description && (
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 break-words text-sm text-muted-foreground">
                       {g.description}
                     </p>
                   )}
+                  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    {dropped ? (
+                      <span className="text-xs text-muted-foreground">
+                        Abandoned
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() =>
+                          setStatus(g, done ? "active" : "completed")
+                        }
+                        className={cn(
+                          "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+                          done
+                            ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
+                            : "border-border hover:border-primary hover:text-primary",
+                        )}
+                        aria-pressed={done}
+                      >
+                        <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        {done ? "Completed" : "Mark complete"}
+                      </button>
+                    )}
+                    <div className="row-actions ml-auto">
+                      {dropped && (
+                        <button
+                          onClick={() => setStatus(g, "active")}
+                          className="icon-btn"
+                          title="Restore"
+                          aria-label={`Restore "${g.title}"`}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => openEdit(g)}
+                        className="icon-btn"
+                        title="Edit"
+                        aria-label={`Edit "${g.title}"`}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      {g.status === "active" && (
+                        <button
+                          onClick={() => setConfirm({ type: "abandon", goal: g })}
+                          className="icon-btn"
+                          title="Abandon"
+                          aria-label={`Abandon "${g.title}"`}
+                        >
+                          <Ban className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setConfirm({ type: "delete", goal: g })}
+                        className="icon-btn hover:text-destructive"
+                        title="Delete"
+                        aria-label={`Delete "${g.title}"`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                  {g.status === "completed" && (
-                    <button
-                      onClick={() => setStatus(g, "active")}
-                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      title="Reopen"
-                    >
-                      <RotateCcw className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => openEdit(g)}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                    title="Edit"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  {g.status === "active" && (
-                    <button
-                      onClick={() => setConfirm({ type: "abandon", goal: g })}
-                      className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-                      title="Abandon"
-                    >
-                      <Ban className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setConfirm({ type: "delete", goal: g })}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                {g.status === "active" && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Flag className="h-3 w-3" /> Active
-                  </Badge>
-                )}
-                {g.status === "completed" && (
-                  <Badge className="bg-primary text-primary-foreground gap-1">
-                    <Check className="h-3 w-3" /> Completed
-                  </Badge>
-                )}
-                {g.status === "abandoned" && (
-                  <Badge variant="outline">Abandoned</Badge>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+              </li>
+            );
+          })}
+        </ol>
       )}
 
       <GoalDialog

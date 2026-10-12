@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 import { authService } from "@/lib/services/authService";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogIn, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
@@ -40,26 +40,30 @@ export default function Login() {
 
   return (
     <AuthLayout
-      icon={LogIn}
-      title="Welcome"
-      subtitle="Sign in with your Google account to continue"
+      title="90 days. A few goals. A few things every day."
+      subtitle="Plan a focused quarter, show up daily, and keep a record of what you did."
+      footer="Signing in creates your account if you don't have one yet."
     >
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
 
       <Button
         variant="outline"
-        className="w-full h-12 text-sm font-medium"
+        size="lg"
+        className="h-12 w-full text-[0.95rem]"
         onClick={handleGoogle}
         disabled={loading}
       >
         {loading ? (
-          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          <Loader2 className="h-5 w-5 animate-spin" />
         ) : (
-          <GoogleIcon className="w-5 h-5 mr-2" />
+          <GoogleIcon className="h-5 w-5" />
         )}
         Continue with Google
       </Button>

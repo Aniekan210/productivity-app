@@ -73,7 +73,7 @@ function Section({ title, hint, children }) {
   return (
     <div>
       <p className="mb-2 text-sm font-medium">{title}</p>
-      {hint && <p className="mb-2.5 text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="-mt-1 mb-3 text-xs text-muted-foreground">{hint}</p>}
       {children}
     </div>
   );
@@ -84,23 +84,29 @@ export default function AppearanceControls({ value, onChange }) {
   const set = (patch) => onChange(patch);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-7">
       <Section title="Theme">
-        <div className="grid grid-cols-3 gap-3">
+        <div
+          role="radiogroup"
+          aria-label="Theme"
+          className="grid max-w-sm grid-cols-3 gap-1 rounded-lg bg-muted p-1"
+        >
           {MODES.map((m) => (
             <button
               key={m.key}
               type="button"
+              role="radio"
+              aria-checked={v.theme === m.key}
               onClick={() => set({ theme: m.key })}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all",
+                "flex h-9 items-center justify-center gap-2 rounded-md text-sm transition-colors",
                 v.theme === m.key
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/40",
+                  ? "bg-card font-medium text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
-              <m.icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{m.label}</span>
+              <m.icon className="h-4 w-4" />
+              {m.label}
             </button>
           ))}
         </div>
@@ -108,7 +114,7 @@ export default function AppearanceControls({ value, onChange }) {
 
       <Section
         title="Color"
-        hint="Buttons, the timeline, badges — your one brand color."
+        hint="One color runs through buttons, checks and the timeline."
       >
         <Swatches value={v.primary} onChange={(c) => set({ primary: c })} />
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -206,7 +212,7 @@ export default function AppearanceControls({ value, onChange }) {
         </div>
       </Section>
 
-      <Section title="Font" hint="One font per vibe.">
+      <Section title="Font">
         <div className="grid grid-cols-2 gap-3">
           {FONT_KEYS.map((k) => (
             <button
@@ -214,15 +220,15 @@ export default function AppearanceControls({ value, onChange }) {
               type="button"
               onClick={() => set({ font: k })}
               className={cn(
-                "flex flex-col items-start gap-1 rounded-xl border-2 p-3 text-left transition-all",
+                "flex flex-col items-start gap-1 rounded-lg border bg-card p-3 text-left transition-colors",
                 v.font === k
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/40",
+                  ? "border-primary ring-1 ring-primary"
+                  : "border-border hover:border-muted-foreground/50",
               )}
               style={{ fontFamily: FONTS[k].stack }}
             >
               <span
-                className="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+                className="text-xs text-muted-foreground"
                 style={{ fontFamily: "'Inter', sans-serif" }}
               >
                 {FONTS[k].vibe}
@@ -242,10 +248,10 @@ export default function AppearanceControls({ value, onChange }) {
               type="button"
               onClick={() => set({ radius: k })}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-xl border-2 p-3 transition-all",
+                "flex flex-col items-center gap-2 rounded-lg border bg-card p-3 transition-colors",
                 v.radius === k
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-muted-foreground/40",
+                  ? "border-primary ring-1 ring-primary"
+                  : "border-border hover:border-muted-foreground/50",
               )}
             >
               <span
