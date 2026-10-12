@@ -102,9 +102,9 @@ export default function QuarterCalendar({
                 disabled
                   ? "cursor-default text-muted-foreground/40"
                   : "hover:bg-muted",
-                isToday && !isSel && "font-semibold text-primary",
+                isToday && !isSel && "font-semibold text-primary ring-1 ring-inset ring-primary",
                 isSel &&
-                  "bg-foreground font-medium text-background hover:bg-foreground",
+                  "bg-primary font-medium text-primary-foreground hover:bg-primary",
               )}
             >
               {format(d, "d")}
@@ -115,7 +115,7 @@ export default function QuarterCalendar({
                   backgroundColor:
                     level >= 0
                       ? isSel
-                        ? "hsl(var(--background))"
+                        ? "hsl(var(--primary-foreground))"
                         : `hsl(var(--brand) / ${MARK_OPACITY[level]})`
                       : "transparent",
                 }}

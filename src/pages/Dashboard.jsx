@@ -89,21 +89,24 @@ export default function Dashboard() {
         eyebrow={range}
         title={active.name}
         meta={
-          <span className="tabular-nums">
-            Day{" "}
-            <span className="font-medium text-foreground">
-              {progress.dayNumber}
-            </span>{" "}
-            of {totalDays} ·{" "}
-            {daysLeft > 0
-              ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} to go`
-              : "last day"}
-          </span>
+          daysLeft > 0
+            ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} to go`
+            : "Last day of the quarter"
         }
         actions={
-          <Button variant="outline" onClick={() => setSummaryOpen(true)}>
-            <ScrollText className="h-4 w-4" /> Summary
-          </Button>
+          <div className="flex w-full items-end justify-between gap-4 sm:w-auto sm:justify-end">
+            <Button variant="outline" onClick={() => setSummaryOpen(true)}>
+              <ScrollText className="h-4 w-4" /> Summary
+            </Button>
+            <div className="text-right tabular-nums">
+              <p className="text-3xl font-semibold leading-none tracking-tight text-primary">
+                Day {progress.dayNumber}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                of {totalDays} days
+              </p>
+            </div>
+          </div>
         }
       />
 

@@ -33,7 +33,7 @@ export default function StatStrip({ items, className }) {
           </dt>
           <dd
             className={cn(
-              "font-display text-[1.6rem] font-medium leading-none tracking-tight tabular-nums sm:text-[2rem]",
+              "text-[1.6rem] font-semibold leading-none tracking-tight tabular-nums sm:text-[1.85rem]",
               s.accent && "text-primary",
             )}
           >

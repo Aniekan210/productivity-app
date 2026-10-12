@@ -37,7 +37,7 @@ export default function MobileNav() {
             >
               <span
                 className={cn(
-                  "grid h-7 w-12 place-items-center rounded-full transition-colors",
+                  "grid h-7 w-12 place-items-center rounded-md transition-colors",
                   active && "bg-primary/12",
                 )}
               >
