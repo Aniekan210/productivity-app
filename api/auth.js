@@ -1,10 +1,8 @@
 import { betterAuth } from "better-auth";
 import { Pool } from "@neondatabase/serverless";
-import { Resend } from "resend";
-import { emailOTP } from "better-auth/plugins";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+// Google is the only sign-in method. No email/password, so no emails, codes
+// or password resets are ever sent.
 export const auth = betterAuth({
   database: new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -16,6 +14,12 @@ export const auth = betterAuth({
     additionalFields: {
       theme: { type: "string", required: false },
       primary: { type: "string", required: false, fieldName: "primary_color" },
+      background: { type: "string", required: false },
+      textOnPrimary: {
+        type: "string",
+        required: false,
+        fieldName: "text_on_primary",
+      },
       font: { type: "string", required: false },
       radius: { type: "string", required: false },
       timezone: { type: "string", required: false },
@@ -24,36 +28,8 @@ export const auth = betterAuth({
   },
 
   emailAndPassword: {
-    enabled: true,
-
-    sendResetPassword: async ({ user, url }) => {
-      await resend.emails.send({
-        from: "no-reply@aniekan.dev",
-        to: user.email,
-        subject: "Reset your password",
-        html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
-      });
-    },
+    enabled: false,
   },
-
-  emailVerification: {
-    autoSignInAfterVerification: true,
-  },
-
-  plugins: [
-    emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
-        if (type === "email-verification") {
-          await resend.emails.send({
-            from: "no-reply@aniekan.dev",
-            to: email,
-            subject: "Verify your email",
-            html: `<p>Your verification code is: <b>${otp}</b></p>`,
-          });
-        }
-      },
-    }),
-  ],
 
   socialProviders: {
     google: {

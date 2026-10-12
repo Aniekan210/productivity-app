@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Trash2, AlertTriangle, LocateFixed } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -82,8 +83,9 @@ const TIMEZONES = [
 ];
 
 export default function Settings() {
-  const { user, logout, refreshUser, checkUserAuth } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const updateSettings = useUpdateSettings(refreshUser);
   const { toast } = useToast();
 
@@ -102,11 +104,28 @@ export default function Settings() {
     user?.font,
   ]);
 
+  // Color pickers fire on every drag step, so batch saves: apply instantly,
+  // persist once the user pauses. A pending save is flushed on unmount.
+  const pendingSave = useRef(null);
+  const saveTimer = useRef(null);
+  const flushSave = () => {
+    clearTimeout(saveTimer.current);
+    if (pendingSave.current) {
+      updateSettings.mutate(pendingSave.current);
+      pendingSave.current = null;
+    }
+  };
+  const flushRef = useRef(flushSave);
+  flushRef.current = flushSave;
+  useEffect(() => () => flushRef.current(), []);
+
   const handleAppearance = (patch) => {
     const next = { ...appearance, ...patch };
     setAppearance(next);
     applyAppearance(next);
-    updateSettings.mutate(next);
+    pendingSave.current = next;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(flushSave, 400);
   };
 
   const handleTimezone = (tz) => {
@@ -122,20 +141,17 @@ export default function Settings() {
     }
   };
 
-  const handleLogout = () => {
-    logout(false);
+  const handleLogout = async () => {
+    flushSave();
+    await logout(false);
     navigate("/login");
   };
 
   const clearData = async () => {
     try {
-      await Promise.all([
-        api.entities.Activity.deleteMany({}),
-        api.entities.Goal.deleteMany({}),
-        api.entities.Quarter.deleteMany({}),
-      ]);
-      await api.auth.updateMe({ onboarded: false });
-      await checkUserAuth();
+      await api.account.clearData();
+      qc.removeQueries();
+      await refreshUser();
       toast({ title: "All data cleared" });
       navigate("/onboarding", { replace: true });
     } catch (e) {

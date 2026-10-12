@@ -17,9 +17,8 @@ export const qk = {
   activities: (qid) => ["activities", qid],
 };
 
-// Postgres DATE columns can come back as plain "yyyy-MM-dd" strings or as
-// full ISO timestamps ("2026-07-01T00:00:00.000Z") depending on the driver.
-// Normalize to "yyyy-MM-dd" before ever comparing dates as strings.
+// The API returns DATE columns as plain "yyyy-MM-dd" strings. Normalizing is
+// a cheap safety net, since day lookups depend on exact string equality.
 function normalizeDateStr(d) {
   if (!d) return d;
   if (typeof d === "string") return d.slice(0, 10);
@@ -35,7 +34,7 @@ function isTempId(id) {
 export function useQuarters() {
   return useQuery({
     queryKey: qk.quarters,
-    queryFn: async () => Quarter.list("-created_date"),
+    queryFn: async () => Quarter.list("-start_date"),
   });
 }
 
@@ -104,7 +103,7 @@ export function useEnsureActiveQuarter() {
     ran.current = true;
     (async () => {
       try {
-        const quarters = await Quarter.list("-created_date");
+        const quarters = await Quarter.list("-start_date");
         const actives = quarters.filter((q) => q.status === "active");
         const now = new Date();
         const cal = calendarQuarterFor(now);
@@ -277,7 +276,7 @@ export function useToggleActivity(quarter_id) {
       }
       return Activity.update(id, {
         completed,
-        completed_date: completed ? new Date().toISOString() : null,
+        completion_timestamp: completed ? new Date().toISOString() : null,
       });
     },
     onMutate: async ({ id, completed }) => {
@@ -290,7 +289,7 @@ export function useToggleActivity(quarter_id) {
             ? {
                 ...a,
                 completed,
-                completed_date: completed ? new Date().toISOString() : null,
+                completion_timestamp: completed ? new Date().toISOString() : null,
               }
             : a,
         ),

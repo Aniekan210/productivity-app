@@ -12,16 +12,7 @@ export const authService = {
   redirectToLogin: (nextUrl) => {
     window.location.href = `/login?returnTo=${encodeURIComponent(nextUrl)}`;
   },
-
-  loginViaEmailPassword: (email, password) =>
-    api.auth.loginViaEmailPassword(email, password),
-  loginWithProvider: (provider, fromUrl) =>
-    api.auth.loginWithProvider(provider, fromUrl),
-  register: (data) => api.auth.register(data.email, data.password),
-  verifyOtp: (data) => api.auth.verifyOtp(data),
-  resendOtp: (email) => api.auth.resendOtp(email),
-  resetPasswordRequest: (email) => api.auth.resetPasswordRequest(email),
-  resetPassword: (data) => api.auth.resetPassword(data),
+  loginWithGoogle: (returnTo) => api.auth.loginWithGoogle(returnTo),
 };
 
 export default authService;

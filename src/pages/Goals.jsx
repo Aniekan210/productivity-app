@@ -15,7 +15,7 @@ import {
   useSaveGoal,
   useDeleteGoal,
 } from "@/lib/useData";
-import { todayKey, pct } from "@/lib/quarterUtils";
+import { todayKey } from "@/lib/quarterUtils";
 import GoalDialog from "@/components/GoalDialog";
 import EmptyState from "@/components/EmptyState";
 import { Button } from "@/components/ui/button";

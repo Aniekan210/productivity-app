@@ -9,7 +9,7 @@ import {
   useDeleteActivity,
   useBulkCreateActivities,
 } from "@/lib/useData";
-import { buildDayMap, todayKey, dayKey } from "@/lib/quarterUtils";
+import { buildDayMap, dayKey } from "@/lib/quarterUtils";
 import QuarterCalendar from "@/components/QuarterCalendar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -76,7 +76,7 @@ export default function Activities() {
         date: d,
         title,
         completed: false,
-        recurrence_id: rid,
+        recurrence_group: rid,
       })),
     });
   };

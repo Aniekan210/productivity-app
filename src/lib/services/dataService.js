@@ -11,12 +11,7 @@ function collection(name) {
     create: (data) => entity.create(data),
     bulkCreate: (records) => entity.bulkCreate(records),
     update: (id, data) => entity.update(id, data),
-    updateMany: (query, update) => entity.updateMany(query, update),
-    bulkUpdate: (records) => entity.bulkUpdate(records),
     delete: (id) => entity.delete(id),
-    deleteMany: (query) => entity.deleteMany(query),
-    subscribe: (cb) => entity.subscribe(cb),
-    schema: () => entity.schema(),
   };
 }
 

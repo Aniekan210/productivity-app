@@ -3,7 +3,6 @@ import {
   buildDayMap,
   activityCompletion,
   todayKey,
-  quarterProgress,
   pct,
 } from "@/lib/quarterUtils";
 

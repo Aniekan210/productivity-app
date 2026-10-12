@@ -2,7 +2,7 @@
 import React from "react";
 import { parseISO, format } from "date-fns";
 // @ts-ignore
-import { Check, Circle, Minus } from "lucide-react";
+import { Check, Circle } from "lucide-react";
 import { dayIntensity } from "@/lib/quarterUtils";
 import { cn } from "@/lib/utils";
 

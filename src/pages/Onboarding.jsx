@@ -44,45 +44,27 @@ export default function Onboarding() {
     setSaving(true);
     try {
       const timezone = detectTimezone();
-      await api.auth.updateMe({
-        ...appearance,
-        timezone,
-        onboarded: true,
-      });
       const q = calendarQuarterFor(new Date());
-      const quarter = await api.entities.Quarter.create({
-        name: q.name,
-        start_date: format(q.start, "yyyy-MM-dd"),
-        end_date: format(q.end, "yyyy-MM-dd"),
-        status: "active",
-        theme: appearance.theme,
-        accent_color: appearance.primary,
-      });
-      const goalTitles = goals.map((g) => g.trim()).filter(Boolean);
-      if (goalTitles.length) {
-        await api.entities.Goal.bulkCreate(
-          goalTitles.map((t) => ({
-            quarter_id: quarter.id,
-            title: t,
-            status: "active",
-          })),
-        );
-      }
-      const actTitles = activities.map((a) => a.trim()).filter(Boolean);
       const today = format(new Date(), "yyyy-MM-dd");
-      if (actTitles.length) {
-        await api.entities.Activity.bulkCreate(
-          actTitles.map((t) => ({
-            quarter_id: quarter.id,
-            date: today,
-            title: t,
-            completed: false,
-          })),
-        );
-      }
+      // One request, one transaction: settings, the first quarter and the
+      // starter goals/activities are saved together or not at all.
+      await api.account.onboard({
+        appearance,
+        timezone,
+        quarter: {
+          name: q.name,
+          start_date: format(q.start, "yyyy-MM-dd"),
+          end_date: format(q.end, "yyyy-MM-dd"),
+        },
+        goals: goals.map((g) => g.trim()).filter(Boolean),
+        activities: activities
+          .map((a) => a.trim())
+          .filter(Boolean)
+          .map((title) => ({ title, date: today })),
+      });
       qc.invalidateQueries({ queryKey: qk.quarters });
-      qc.invalidateQueries({ queryKey: qk.goals(quarter.id) });
-      qc.invalidateQueries({ queryKey: qk.activities(quarter.id) });
+      qc.invalidateQueries({ queryKey: ["goals"] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
       updateUser({ ...appearance, timezone, onboarded: true });
       navigate("/", { replace: true });
     } catch (e) {
