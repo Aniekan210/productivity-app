@@ -1,22 +1,22 @@
-// @ts-ignore
 import React from "react";
 
-// @ts-ignore
 export default function EmptyState({ icon: Icon, title, description, action }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border px-6 py-12 text-center">
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border px-6 py-14 text-center">
       {Icon && (
-        <div className="mb-4 grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground">
-          <Icon className="h-6 w-6" />
-        </div>
+        <Icon
+          className="mb-4 h-6 w-6 text-muted-foreground/70"
+          strokeWidth={1.5}
+          aria-hidden="true"
+        />
       )}
-      <p className="text-base font-medium">{title}</p>
+      <p className="font-display text-xl font-medium tracking-tight">{title}</p>
       {description && (
-        <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+        <p className="mt-1.5 max-w-sm text-sm text-muted-foreground">
           {description}
         </p>
       )}
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }

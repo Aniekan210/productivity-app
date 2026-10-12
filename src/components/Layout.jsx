@@ -1,18 +1,27 @@
 import React, { useEffect, useMemo } from "react";
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import { applyAppearance, readAppearance } from "@/lib/theme";
 import { useEnsureActiveQuarter } from "@/lib/useData";
 import Sidebar from "@/components/Sidebar";
 import MobileNav from "@/components/MobileNav";
+import Wordmark from "@/components/Wordmark";
+import UserAvatar from "@/components/UserAvatar";
 
 export const navItems = [
-  { to: "/", label: "Dashboard", icon: "LayoutDashboard" },
+  { to: "/", label: "Dashboard", short: "Home", icon: "LayoutDashboard" },
   { to: "/activities", label: "Activities", icon: "CalendarCheck" },
   { to: "/goals", label: "Goals", icon: "Target" },
-  { to: "/past-quarters", label: "Past Quarters", icon: "History" },
+  { to: "/past-quarters", label: "Past quarters", short: "Past", icon: "History" },
   { to: "/settings", label: "Settings", icon: "Settings" },
 ];
+
+// A past quarter's detail page still lights up "Past quarters".
+export function isNavActive(to, pathname) {
+  if (to === "/") return pathname === "/";
+  if (to === "/past-quarters") return pathname === to || pathname.startsWith("/quarter/");
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
 
 export default function Layout() {
   const { user } = useAuth();
@@ -60,8 +69,17 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Sidebar />
-      <main className="md:pl-64">
-        <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 md:px-8 md:pb-12 md:pt-8">
+      {/* Slim top bar on phones, where the sidebar is hidden. */}
+      <div className="flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] md:hidden">
+        <Link to="/" className="text-[1.35rem] leading-none">
+          <Wordmark />
+        </Link>
+        <Link to="/settings" aria-label="Settings">
+          <UserAvatar user={user} className="h-7 w-7" />
+        </Link>
+      </div>
+      <main className="md:pl-60">
+        <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 sm:px-6 md:px-10 md:pb-16 md:pt-10">
           <Outlet />
         </div>
       </main>

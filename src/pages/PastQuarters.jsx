@@ -1,10 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { History, ArrowRight } from "lucide-react";
+import { parseISO, format } from "date-fns";
 import { useQuarters } from "@/lib/useData";
-import { parseISO } from "date-fns";
-import { fmtDate, quarterDayCount } from "@/lib/quarterUtils";
+import { quarterDayCount } from "@/lib/quarterUtils";
+import { intensityColor } from "@/lib/theme";
 import EmptyState from "@/components/EmptyState";
+import PageHeader from "@/components/PageHeader";
 
 export default function PastQuarters() {
   const { data: quarters, isLoading } = useQuarters();
@@ -14,47 +16,50 @@ export default function PastQuarters() {
     .sort((a, b) => (a.start_date < b.start_date ? 1 : -1));
 
   return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-2xl font-semibold tracking-tight">
-          Past Quarters
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Your completed quarters, preserved as a historical record. New
-          quarters start automatically each calendar quarter.
-        </p>
-      </header>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader
+        title="Past quarters"
+        meta="Every finished quarter, kept as a record. A new one starts on its own each calendar quarter."
+      />
 
       {isLoading ? (
-        <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-40 animate-pulse rounded-lg bg-muted" />
       ) : list.length === 0 ? (
         <EmptyState
           icon={History}
-          title="No past quarters yet"
-          description="Once this quarter ends and the next one begins, the completed quarter will appear here."
+          title="Nothing here yet"
+          description="When this quarter ends, it'll be filed here so you can look back on it."
         />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
           {list.map((q) => (
-            <Link
-              key={q.id}
-              to={`/quarter/${q.id}`}
-              className="group flex items-center justify-between rounded-2xl border border-border bg-card p-5 transition-colors hover:border-primary/40"
-            >
-              <div>
-                <p className="text-base font-semibold">{q.name}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {fmtDate(parseISO(q.start_date))} –{" "}
-                  {fmtDate(parseISO(q.end_date))}
-                </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {quarterDayCount(q.start_date, q.end_date)} days
-                </p>
-              </div>
-              <ArrowRight className="h-5 w-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
-            </Link>
+            <li key={q.id}>
+              <Link
+                to={`/quarter/${q.id}`}
+                className="group flex items-center gap-4 px-5 py-4 transition-colors hover:bg-muted/50 sm:px-6 sm:py-5"
+              >
+                <span
+                  aria-hidden="true"
+                  className="h-10 w-1.5 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: intensityColor(q.accent_color || "violet", 4),
+                  }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-xl font-medium tracking-tight">
+                    {q.name}
+                  </p>
+                  <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">
+                    {format(parseISO(q.start_date), "MMM d")} –{" "}
+                    {format(parseISO(q.end_date), "MMM d, yyyy")} ·{" "}
+                    {quarterDayCount(q.start_date, q.end_date)} days
+                  </p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+              </Link>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

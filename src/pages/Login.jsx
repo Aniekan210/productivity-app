@@ -1,148 +1,72 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { api } from "@/api/apiClient";
+import { Navigate } from "react-router-dom";
+import { authService } from "@/lib/services/authService";
+import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { LogIn, Mail, Lock, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AuthLayout from "@/components/AuthLayout";
 import GoogleIcon from "@/components/GoogleIcon";
 import { safeReturnTo } from "@/lib/authReturnTo";
 
+// better-auth redirects back here with ?error=<code> when Google sign-in
+// fails or is cancelled.
+function errorFromUrl() {
+  const code = new URLSearchParams(window.location.search).get("error");
+  if (!code) return "";
+  if (code === "access_denied") return "Google sign-in was cancelled.";
+  return "Google sign-in failed. Please try again.";
+}
+
 export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const { isAuthenticated } = useAuth();
+  const [error, setError] = useState(errorFromUrl);
   const [loading, setLoading] = useState(false);
   const returnTo = safeReturnTo();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  if (isAuthenticated) return <Navigate to={returnTo} replace />;
+
+  const handleGoogle = async () => {
     setError("");
     setLoading(true);
     try {
-      await api.auth.loginViaEmailPassword(email, password);
-      window.location.href = returnTo;
+      const result = await authService.loginWithGoogle(returnTo);
+      // On success the browser navigates to Google; only errors return here.
+      if (result?.error) throw new Error(result.error.message);
     } catch (err) {
-      setError(err.message || "Invalid email or password");
-    } finally {
+      setError(err.message || "Google sign-in failed. Please try again.");
       setLoading(false);
     }
   };
 
-  const handleGoogle = () => {
-    api.auth.loginWithProvider("google", returnTo);
-  };
-
   return (
     <AuthLayout
-      icon={LogIn}
-      title="Welcome back"
-      subtitle="Log in to your account"
-      footer={
-        <>
-          Don't have an account?{" "}
-          <Link
-            to={
-              "/register" +
-              (returnTo !== "/"
-                ? "?returnTo=" + encodeURIComponent(returnTo)
-                : "")
-            }
-            className="text-primary font-medium hover:underline"
-          >
-            Create one
-          </Link>
-        </>
-      }
+      title="90 days. A few goals. A few things every day."
+      subtitle="Plan a focused quarter, show up daily, and keep a record of what you did."
+      footer="Signing in creates your account if you don't have one yet."
     >
-      <Button
-        variant="outline"
-        className="w-full h-12 text-sm font-medium mb-6"
-        onClick={handleGoogle}
-      >
-        <GoogleIcon className="w-5 h-5 mr-2" />
-        Continue with Google
-      </Button>
-
-      <div className="relative mb-6">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-border" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-3 text-muted-foreground">or</span>
-        </div>
-      </div>
-
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+        <div
+          role="alert"
+          className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+        >
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <div className="relative">
-            <Mail
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoFocus
-              placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link
-              to="/forgot-password"
-              className="text-xs text-primary hover:underline"
-            >
-              Forgot password?
-            </Link>
-          </div>
-          <div className="relative">
-            <Lock
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 h-12"
-              required
-            />
-          </div>
-        </div>
-        <Button
-          type="submit"
-          className="w-full h-12 font-medium"
-          disabled={loading}
-        >
-          {loading ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Logging in...
-            </>
-          ) : (
-            "Log in"
-          )}
-        </Button>
-      </form>
+      <Button
+        variant="outline"
+        size="lg"
+        className="h-12 w-full text-[0.95rem]"
+        onClick={handleGoogle}
+        disabled={loading}
+      >
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <GoogleIcon className="h-5 w-5" />
+        )}
+        Continue with Google
+      </Button>
     </AuthLayout>
   );
 }

@@ -54,110 +54,131 @@ export default function TodayActivities({ quarter_id, todays, tz }) {
   };
 
   return (
-    <section className="surface-card p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-base font-semibold">Today's Activities</h2>
-          <p className="text-xs text-muted-foreground">
-            {format(parseISO(today), "EEEE, MMM d")}
+    <section className="surface-card flex flex-col p-5 sm:p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="section-title">Today</h2>
+          <p className="text-sm text-muted-foreground">
+            {format(parseISO(today), "EEEE, MMMM d")}
           </p>
         </div>
-        <div className="text-right">
-          <p
-            className="text-lg font-semibold"
-            style={{ color: "hsl(var(--brand))" }}
-          >
-            {total ? `${completed}/${total}` : "—"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            {total ? `${rate}% complete` : "nothing planned"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 space-y-1.5">
-        {total === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            Nothing planned for today. Add your first activity below.
+        {total > 0 && (
+          <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
+            <span className="font-display text-xl font-medium text-foreground">
+              {completed}
+            </span>
+            /{total}
           </p>
         )}
-        {todays.map((a) => (
+      </div>
+      {total > 0 && (
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-muted">
           <div
-            key={a.id}
-            className="group flex items-center gap-3 rounded-lg px-2 py-2 hover:bg-muted/50"
-          >
+            className="h-full rounded-full bg-primary transition-[width] duration-500"
+            style={{ width: `${rate}%` }}
+          />
+        </div>
+      )}
+
+      <ul className="mt-3 flex-1 divide-y divide-border">
+        {total === 0 && (
+          <li className="py-6 text-sm text-muted-foreground">
+            Nothing planned yet. What would make today count?
+          </li>
+        )}
+        {todays.map((a) => (
+          <li key={a.id} className="group flex min-h-[3rem] items-center gap-3 py-1.5">
             <Checkbox
               checked={a.completed}
               onCheckedChange={(v) =>
                 toggle.mutate({ id: a.id, completed: !!v })
               }
               disabled={toggle.isPending}
+              aria-label={`Mark "${a.title}" ${a.completed ? "not done" : "done"}`}
             />
             {editingId === a.id ? (
-              <div className="flex flex-1 items-center gap-2">
+              <form
+                className="flex flex-1 items-center gap-1"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveEdit();
+                }}
+              >
                 <Input
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
-                  className="h-8"
+                  onKeyDown={(e) => e.key === "Escape" && setEditingId(null)}
+                  className="h-9"
+                  aria-label="Activity title"
                   autoFocus
                 />
-                <Button size="sm" variant="ghost" onClick={saveEdit}>
+                <Button type="submit" size="sm" variant="ghost">
                   Save
                 </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
+                <button
+                  type="button"
+                  className="icon-btn"
                   onClick={() => setEditingId(null)}
+                  aria-label="Cancel editing"
                 >
                   <X className="h-4 w-4" />
-                </Button>
-              </div>
+                </button>
+              </form>
             ) : (
               <>
                 <span
                   className={cn(
-                    "flex-1 text-sm",
-                    a.completed && "text-muted-foreground line-through",
+                    "min-w-0 flex-1 break-words text-[0.95rem] transition-colors",
+                    a.completed &&
+                      "text-muted-foreground line-through decoration-muted-foreground/50",
                   )}
                 >
                   {a.title}
                 </span>
-                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="row-actions">
                   <button
                     onClick={() => startEdit(a)}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-background hover:text-foreground"
+                    className="icon-btn"
+                    aria-label={`Edit "${a.title}"`}
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
                   <button
                     onClick={() => remove.mutate({ id: a.id, quarter_id })}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-background hover:text-destructive"
+                    className="icon-btn hover:text-destructive"
+                    aria-label={`Delete "${a.title}"`}
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className="mt-4 flex items-center gap-2">
+      <form
+        className="mt-3 flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          addToday();
+        }}
+      >
         <Input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addToday()}
-          placeholder="Add an activity for today…"
-          className="h-9"
+          placeholder="Add something for today"
+          aria-label="New activity for today"
         />
         <Button
-          onClick={addToday}
-          size="sm"
+          type="submit"
+          size="icon"
           disabled={!newTitle.trim() || save.isPending}
+          aria-label="Add activity"
         >
-          <Plus className="mr-1 h-4 w-4" /> Add
+          <Plus className="h-4 w-4" />
         </Button>
-      </div>
+      </form>
     </section>
   );
 }

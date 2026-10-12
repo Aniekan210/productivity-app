@@ -1,68 +1,68 @@
 import React from "react";
-import { Check, Target } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowUpRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function GoalsSection({ goals, quarterName }) {
+// Compact, read-only goal list for the dashboard.
+export default function GoalsSection({ goals }) {
   const total = goals.length;
   const completed = goals.filter((g) => g.status === "completed").length;
-  const active = goals.filter((g) => g.status === "active").length;
-  const rate = total ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <section className="surface-card p-5">
-      <div className="flex items-center gap-2">
-        <Target className="h-4 w-4 text-primary" />
-        <h2 className="text-base font-semibold">{quarterName} Goals</h2>
-      </div>
-
-      <div className="mt-3 flex items-center gap-3 text-sm text-muted-foreground">
-        <span style={{ color: "hsl(var(--brand))" }} className="font-semibold">
-          {completed}/{total} completed
-        </span>
-        <span>·</span>
-        <span>{active} active</span>
-        <span>·</span>
-        <span>{total ? `${rate}%` : "—"}</span>
-      </div>
-
-      <div className="mt-4 space-y-1.5">
-        {total === 0 && (
-          <p className="py-6 text-center text-sm text-muted-foreground">
-            You haven't set any goals for this quarter yet.
+    <section className="surface-card flex flex-col p-5 sm:p-6">
+      <div className="flex items-baseline justify-between gap-3">
+        <div>
+          <h2 className="section-title">Goals</h2>
+          <p className="text-sm text-muted-foreground">
+            {total
+              ? `${completed} of ${total} complete`
+              : "None set for this quarter"}
           </p>
+        </div>
+        <Link
+          to="/goals"
+          className="inline-flex shrink-0 items-center gap-0.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Manage <ArrowUpRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
+
+      <ol className="mt-3 flex-1 divide-y divide-border">
+        {total === 0 && (
+          <li className="py-6 text-sm text-muted-foreground">
+            Six is the sweet spot. Even one is a start.
+          </li>
         )}
-        {goals.map((g) => (
-          <div
-            key={g.id}
-            className="flex items-center gap-3 rounded-lg px-2 py-2"
-          >
-            <span
-              className={cn(
-                "grid h-5 w-5 place-items-center rounded-full border text-white",
-                g.status === "completed"
-                  ? "border-transparent bg-primary text-primary-foreground"
-                  : "border-border",
-              )}
-            >
-              {g.status === "completed" && <Check className="h-3 w-3" />}
+        {goals.map((g, i) => (
+          <li key={g.id} className="flex min-h-[3rem] items-center gap-3 py-1.5">
+            <span className="w-5 shrink-0 font-display text-sm tabular-nums text-muted-foreground">
+              {String(i + 1).padStart(2, "0")}
             </span>
             <span
               className={cn(
-                "flex-1 text-sm",
+                "min-w-0 flex-1 break-words text-[0.95rem]",
                 g.status === "completed" &&
-                  "text-muted-foreground line-through",
+                  "text-muted-foreground line-through decoration-muted-foreground/50",
                 g.status === "abandoned" &&
-                  "text-muted-foreground line-through opacity-60",
+                  "text-muted-foreground/60 line-through decoration-muted-foreground/40",
               )}
             >
               {g.title}
             </span>
-            {g.status === "abandoned" && (
-              <span className="text-xs text-muted-foreground">abandoned</span>
+            {g.status === "completed" && (
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
+                <Check className="h-3 w-3" strokeWidth={3} />
+                <span className="sr-only">Completed</span>
+              </span>
             )}
-          </div>
+            {g.status === "abandoned" && (
+              <span className="shrink-0 text-xs text-muted-foreground">
+                Abandoned
+              </span>
+            )}
+          </li>
         ))}
-      </div>
+      </ol>
     </section>
   );
 }

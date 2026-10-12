@@ -7,6 +7,10 @@
     {
       "source": "/api/entities/:path*",
       "destination": "/api/entities/[...entity].js"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }

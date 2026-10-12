@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 
 import { authService } from "@/lib/services/authService";
+import { queryClientInstance } from "@/lib/query-client";
 
 const AuthContext = createContext();
 
@@ -30,8 +31,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
-    authService.logout();
+  const logout = async (shouldRedirect = true) => {
+    try {
+      await authService.logout();
+    } catch (e) {
+      // Still clear local state; the session cookie expires on its own.
+    }
+    // Drop cached data so the next account on this browser never sees it.
+    queryClientInstance.clear();
 
     setUser(null);
     setIsAuthenticated(false);

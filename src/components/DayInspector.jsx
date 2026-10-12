@@ -1,90 +1,64 @@
-// @ts-ignore
 import React from "react";
 import { parseISO, format } from "date-fns";
-// @ts-ignore
-import { Check, Circle, Minus } from "lucide-react";
-import { dayIntensity } from "@/lib/quarterUtils";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// @ts-ignore
-export default function DayInspector({ dateKey, dayData, todayKeyStr }) {
+// Read-only look at one day of the timeline.
+export default function DayInspector({ dateKey, dayData, todayKeyStr, className }) {
   const date = parseISO(dateKey);
   const isToday = dateKey === todayKeyStr;
+  const isFuture = dateKey > todayKeyStr;
   const planned = dayData?.planned || 0;
   const completed = dayData?.completed || 0;
-  // @ts-ignore
-  const level = dayIntensity(planned, completed);
-
-  const legend = ["-1", "0", "1", "2", "3", "4"];
-  const labels = {
-    "-1": "No activities",
-    0: "0%",
-    1: "Low",
-    2: "Medium",
-    3: "High",
-    4: "100%",
-  };
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-semibold">
-            {isToday ? "Today · " : ""}
-            {format(date, "EEEE, MMM d")}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {planned === 0
-              ? "Nothing planned"
-              : `${completed} / ${planned} completed`}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          {legend.map((l) => (
-            <span
-              key={l}
-              className={cn(
-                "h-3 w-3 rounded-[3px]",
-                l === "-1" && "border border-border",
-              )}
-              style={{
-                backgroundColor:
-                  l === "-1"
-                    ? "transparent"
-                    : `hsl(var(--brand) / ${l === "0" ? 0.08 : l === "1" ? 0.28 : l === "2" ? 0.5 : l === "3" ? 0.72 : 1})`,
-              }}
-              // @ts-ignore
-              title={labels[l]}
-            />
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-1.5">
-        {planned === 0 && (
-          <p className="py-2 text-sm text-muted-foreground">
-            No activities planned for this day.
+    <div className={cn("rounded-lg bg-muted/60 p-4", className)}>
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-sm font-semibold">
+          {isToday ? "Today" : format(date, "EEEE")}
+          <span className="font-normal text-muted-foreground">
+            {" "}
+            · {format(date, "MMM d")}
+          </span>
+        </p>
+        {planned > 0 && (
+          <p className="text-sm tabular-nums text-muted-foreground">
+            <span className="font-medium text-foreground">{completed}</span>/
+            {planned}
           </p>
         )}
-        {(dayData?.activities || []).map((
-// @ts-ignore
-        a) => (
-          <div key={a.id} className="flex items-center gap-2 text-sm">
-            {a.completed ? (
-              <Check className="h-4 w-4 text-primary" />
-            ) : (
-              <Circle className="h-4 w-4 text-muted-foreground" />
-            )}
-            <span
-              className={cn(
-                a.completed && "text-muted-foreground line-through",
-              )}
-            >
-              {a.title}
-            </span>
-          </div>
-        ))}
       </div>
+
+      {planned === 0 ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {isFuture ? "Nothing planned yet." : "Nothing was planned."}
+        </p>
+      ) : (
+        <ul className="mt-3 space-y-2">
+          {dayData.activities.map((a) => (
+            <li key={a.id} className="flex items-start gap-2.5 text-sm">
+              <span
+                className={cn(
+                  "mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border-[1.5px]",
+                  a.completed
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-muted-foreground/40",
+                )}
+              >
+                {a.completed && <Check className="h-2.5 w-2.5" strokeWidth={3.5} />}
+              </span>
+              <span
+                className={cn(
+                  "min-w-0 break-words",
+                  a.completed && "text-muted-foreground line-through decoration-muted-foreground/50",
+                )}
+              >
+                {a.title}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

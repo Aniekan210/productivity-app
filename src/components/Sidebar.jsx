@@ -9,7 +9,9 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { navItems } from "@/components/Layout";
+import { navItems, isNavActive } from "@/components/Layout";
+import Wordmark from "@/components/Wordmark";
+import UserAvatar from "@/components/UserAvatar";
 import { cn } from "@/lib/utils";
 
 const ICONS = { LayoutDashboard, CalendarCheck, Target, History, Settings };
@@ -19,42 +21,39 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout(false);
+  const handleLogout = async () => {
+    await logout(false);
     navigate("/login");
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex">
-      <div className="px-6 pb-2 pt-7">
-        <p className="font-display text-2xl font-semibold tracking-tight text-sidebar-foreground">
-          3/6/9
-        </p>
-        <p className="text-xs text-muted-foreground">Quarter Tracker</p>
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+      <div className="px-6 pb-6 pt-8">
+        <Link to="/" className="inline-block text-[1.75rem] leading-none">
+          <Wordmark />
+        </Link>
       </div>
 
-      <nav className="flex-1 space-y-1 px-3 pt-4">
+      <nav className="flex-1 space-y-0.5 px-3" aria-label="Main">
         {navItems.map((item) => {
           const Icon = ICONS[item.icon];
-          const active = location.pathname === item.to;
+          const active = isNavActive(item.to, location.pathname);
           return (
             <Link
               key={item.to}
               to={item.to}
+              aria-current={active ? "page" : undefined}
               className={cn(
-                "group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                   : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
               )}
             >
-              <span
-                className={cn(
-                  "absolute left-0 top-1/2 h-5 -translate-y-1/2 rounded-r-full bg-primary transition-all",
-                  active ? "w-1" : "w-0",
-                )}
+              <Icon
+                className={cn("h-[18px] w-[18px]", active && "text-primary")}
+                strokeWidth={active ? 2.25 : 1.75}
               />
-              <Icon className="h-4 w-4" />
               {item.label}
             </Link>
           );
@@ -62,25 +61,25 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-3 rounded-lg px-3 py-2">
-          <div className="grid h-8 w-8 place-items-center rounded-full bg-primary/15 text-xs font-semibold uppercase text-primary">
-            {(user?.full_name || user?.email || "?").slice(0, 1)}
-          </div>
+        <div className="flex items-center gap-3 px-2 py-2">
+          <UserAvatar user={user} />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
-              {user?.full_name || "Account"}
+              {user?.name || "Your account"}
             </p>
             <p className="truncate text-xs text-muted-foreground">
               {user?.email}
             </p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="icon-btn"
+            title="Log out"
+            aria-label="Log out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
-        <button
-          onClick={handleLogout}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
-        >
-          <LogOut className="h-4 w-4" /> Log out
-        </button>
       </div>
     </aside>
   );

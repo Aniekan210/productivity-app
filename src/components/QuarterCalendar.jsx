@@ -14,16 +14,19 @@ import {
   parseISO,
 } from "date-fns";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { dayIntensity, dayKey } from "@/lib/quarterUtils";
 
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
+// Weeks start on Monday, matching the 90-day timeline.
+const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
+const MARK_OPACITY = { 0: 0.18, 1: 0.4, 2: 0.6, 3: 0.8, 4: 1 };
 
 export default function QuarterCalendar({
   selected,
   onSelect,
   quarterStart,
   quarterEnd,
+  dayMap = {},
 }) {
   const [viewMonth, setViewMonth] = useState(selected || new Date());
   const start = parseISO(quarterStart);
@@ -31,8 +34,8 @@ export default function QuarterCalendar({
   const today = new Date();
 
   const days = useMemo(() => {
-    const mStart = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 0 });
-    const mEnd = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 0 });
+    const mStart = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 1 });
+    const mEnd = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 1 });
     return eachDayOfInterval({ start: mStart, end: mEnd });
   }, [viewMonth]);
 
@@ -42,33 +45,36 @@ export default function QuarterCalendar({
   return (
     <div className="w-full">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-base font-semibold">
-          {format(viewMonth, "MMMM yyyy")}
+        <h3 className="font-display text-xl font-medium tracking-tight">
+          {format(viewMonth, "MMMM")}{" "}
+          <span className="text-muted-foreground">
+            {format(viewMonth, "yyyy")}
+          </span>
         </h3>
         <div className="flex gap-1">
-          <Button
-            variant="outline"
-            size="icon"
+          <button
+            className="icon-btn disabled:pointer-events-none disabled:opacity-30"
             disabled={!canPrev}
             onClick={() => setViewMonth(addMonths(viewMonth, -1))}
+            aria-label="Previous month"
           >
             <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
+          </button>
+          <button
+            className="icon-btn disabled:pointer-events-none disabled:opacity-30"
             disabled={!canNext}
             onClick={() => setViewMonth(addMonths(viewMonth, 1))}
+            aria-label="Next month"
           >
             <ChevronRight className="h-4 w-4" />
-          </Button>
+          </button>
         </div>
       </div>
-      <div className="grid grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-7 gap-1">
         {WEEKDAYS.map((d, i) => (
           <div
             key={i}
-            className="py-1 text-center text-xs font-medium text-muted-foreground"
+            className="pb-1 text-center text-[11px] text-muted-foreground"
           >
             {d}
           </div>
@@ -79,21 +85,41 @@ export default function QuarterCalendar({
           const isSel = selected && isSameDay(d, selected);
           const isToday = isSameDay(d, today);
           const disabled = !inMonth || !inQuarter;
+          const data = dayMap[dayKey(d)];
+          const level = data ? dayIntensity(data.planned, data.completed) : -1;
+          if (!inMonth) return <span key={d.toISOString()} />;
           return (
             <button
               key={d.toISOString()}
               disabled={disabled}
               onClick={() => !disabled && onSelect(d)}
+              aria-pressed={!!isSel}
+              aria-label={`${format(d, "EEEE, MMMM d")}${
+                data ? `, ${data.completed} of ${data.planned} done` : ""
+              }`}
               className={cn(
-                "h-11 rounded-lg text-sm font-medium transition-colors",
-                disabled ? "opacity-25 cursor-not-allowed" : "hover:bg-accent",
+                "relative flex aspect-square max-h-14 w-full flex-col items-center justify-center rounded-md text-sm tabular-nums transition-colors",
+                disabled
+                  ? "cursor-default text-muted-foreground/40"
+                  : "hover:bg-muted",
+                isToday && !isSel && "font-semibold text-primary",
                 isSel &&
-                  !disabled &&
-                  "bg-primary text-primary-foreground hover:bg-primary",
-                isToday && !isSel && !disabled && "ring-1 ring-primary",
+                  "bg-foreground font-medium text-background hover:bg-foreground",
               )}
             >
               {format(d, "d")}
+              <span
+                aria-hidden="true"
+                className="absolute bottom-[18%] h-1 w-1 rounded-full"
+                style={{
+                  backgroundColor:
+                    level >= 0
+                      ? isSel
+                        ? "hsl(var(--background))"
+                        : `hsl(var(--brand) / ${MARK_OPACITY[level]})`
+                      : "transparent",
+                }}
+              />
             </button>
           );
         })}

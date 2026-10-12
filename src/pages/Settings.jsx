@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { LogOut, Trash2, AlertTriangle, LocateFixed } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
@@ -6,13 +7,8 @@ import { useUpdateSettings } from "@/lib/useData";
 import { applyAppearance, readAppearance, detectTimezone } from "@/lib/theme";
 import { api } from "@/api/apiClient";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import PageHeader from "@/components/PageHeader";
+import UserAvatar from "@/components/UserAvatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +21,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -82,8 +77,9 @@ const TIMEZONES = [
 ];
 
 export default function Settings() {
-  const { user, logout, refreshUser, checkUserAuth } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const updateSettings = useUpdateSettings(refreshUser);
   const { toast } = useToast();
 
@@ -102,11 +98,28 @@ export default function Settings() {
     user?.font,
   ]);
 
+  // Color pickers fire on every drag step, so batch saves: apply instantly,
+  // persist once the user pauses. A pending save is flushed on unmount.
+  const pendingSave = useRef(null);
+  const saveTimer = useRef(null);
+  const flushSave = () => {
+    clearTimeout(saveTimer.current);
+    if (pendingSave.current) {
+      updateSettings.mutate(pendingSave.current);
+      pendingSave.current = null;
+    }
+  };
+  const flushRef = useRef(flushSave);
+  flushRef.current = flushSave;
+  useEffect(() => () => flushRef.current(), []);
+
   const handleAppearance = (patch) => {
     const next = { ...appearance, ...patch };
     setAppearance(next);
     applyAppearance(next);
-    updateSettings.mutate(next);
+    pendingSave.current = next;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(flushSave, 400);
   };
 
   const handleTimezone = (tz) => {
@@ -122,20 +135,17 @@ export default function Settings() {
     }
   };
 
-  const handleLogout = () => {
-    logout(false);
+  const handleLogout = async () => {
+    flushSave();
+    await logout(false);
     navigate("/login");
   };
 
   const clearData = async () => {
     try {
-      await Promise.all([
-        api.entities.Activity.deleteMany({}),
-        api.entities.Goal.deleteMany({}),
-        api.entities.Quarter.deleteMany({}),
-      ]);
-      await api.auth.updateMe({ onboarded: false });
-      await checkUserAuth();
+      await api.account.clearData();
+      qc.removeQueries();
+      await refreshUser();
       toast({ title: "All data cleared" });
       navigate("/onboarding", { replace: true });
     } catch (e) {
@@ -148,104 +158,75 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-display text-2xl font-semibold tracking-tight">
-        Settings
-      </h1>
+    <div className="space-y-6 sm:space-y-8">
+      <PageHeader title="Settings" />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Appearance</CardTitle>
-          <CardDescription>
-            Theme, color, background, font, and corners. Changes apply
-            instantly.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="divide-y divide-border border-y border-border">
+        <SettingsSection
+          title="Appearance"
+          description="Theme, color, font and corners. Changes apply as you go."
+        >
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_17rem]">
             <AppearanceControls
               value={appearance}
               onChange={handleAppearance}
             />
-            <div className="lg:sticky lg:top-6 lg:self-start">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Preview
-              </p>
+            <div className="xl:sticky xl:top-8 xl:self-start">
+              <p className="mb-2 text-sm text-muted-foreground">Preview</p>
               <AppearancePreview value={appearance} />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </SettingsSection>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Timezone</CardTitle>
-          <CardDescription>
-            Used to determine "today" for your activities and timeline.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <Select value={timezone} onValueChange={handleTimezone}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select timezone" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {TIMEZONES.map((tz) => (
-                <SelectItem key={tz} value={tz}>
-                  {tz}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" size="sm" onClick={detectTz}>
-            <LocateFixed className="mr-2 h-4 w-4" /> Use my device timezone
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Account</CardTitle>
-          <CardDescription>Your account details.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>Name</Label>
-            <Input
-              value={user?.full_name || ""}
-              readOnly
-              disabled
-              className="bg-muted/50"
-            />
+        <SettingsSection
+          title="Timezone"
+          description={'Decides when "today" starts for your activities and timeline.'}
+        >
+          <div className="flex max-w-md flex-col gap-3">
+            <Select value={timezone} onValueChange={handleTimezone}>
+              <SelectTrigger className="h-10 w-full bg-card">
+                <SelectValue placeholder="Select timezone" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {TIMEZONES.map((tz) => (
+                  <SelectItem key={tz} value={tz}>
+                    {tz}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button variant="outline" className="self-start" onClick={detectTz}>
+              <LocateFixed className="h-4 w-4" /> Use this device's timezone
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label>Email</Label>
-            <Input
-              value={user?.email || ""}
-              readOnly
-              disabled
-              className="bg-muted/50"
-            />
-          </div>
-          <Button variant="outline" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" /> Log out
-          </Button>
-        </CardContent>
-      </Card>
+        </SettingsSection>
 
-      <Card className="border-destructive/30">
-        <CardHeader>
-          <CardTitle className="text-destructive">Data</CardTitle>
-          <CardDescription>
-            Permanently delete all your quarters, goals, and activities. This
-            cannot be undone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+        <SettingsSection title="Account" description="Signed in with Google.">
+          <div className="flex max-w-md flex-wrap items-center gap-4">
+            <UserAvatar user={user} className="h-11 w-11 text-sm" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{user?.name || "Your account"}</p>
+              <p className="truncate text-sm text-muted-foreground">
+                {user?.email}
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleLogout}>
+              <LogOut className="h-4 w-4" /> Log out
+            </Button>
+          </div>
+        </SettingsSection>
+
+        <SettingsSection
+          title="Danger zone"
+          description="Permanently delete every quarter, goal and activity. Your account stays."
+        >
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" /> Clear all data
+              <Button
+                variant="outline"
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" /> Clear all data
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
@@ -263,7 +244,9 @@ export default function Settings() {
                 value={confirmText}
                 onChange={(e) => setConfirmText(e.target.value)}
                 placeholder="DELETE"
-                className="my-2"
+                aria-label="Type DELETE to confirm"
+                autoCapitalize="characters"
+                autoComplete="off"
               />
               <AlertDialogFooter>
                 <AlertDialogCancel onClick={() => setConfirmText("")}>
@@ -279,8 +262,22 @@ export default function Settings() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </CardContent>
-      </Card>
+        </SettingsSection>
+      </div>
     </div>
+  );
+}
+
+function SettingsSection({ title, description, children }) {
+  return (
+    <section className="grid gap-4 py-7 sm:py-8 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+      <div>
+        <h2 className="section-title">{title}</h2>
+        {description && (
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        )}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </section>
   );
 }
