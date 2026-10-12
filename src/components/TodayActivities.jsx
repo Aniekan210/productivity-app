@@ -63,8 +63,8 @@ export default function TodayActivities({ quarter_id, todays, tz }) {
           </p>
         </div>
         {total > 0 && (
-          <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
-            <span className="font-display text-xl font-medium text-foreground">
+          <p className="shrink-0 text-sm tabular-nums text-primary">
+            <span className="text-xl font-semibold">
               {completed}
             </span>
             /{total}

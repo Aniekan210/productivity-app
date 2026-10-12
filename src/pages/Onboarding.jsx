@@ -114,7 +114,7 @@ export default function Onboarding() {
                 ["90", "days to do it"],
               ].map(([n, label]) => (
                 <div key={n} className="p-4 sm:p-5">
-                  <dt className="font-display text-4xl font-medium leading-none text-primary sm:text-5xl">
+                  <dt className="text-4xl font-semibold leading-none tracking-tight text-primary sm:text-5xl">
                     {n}
                   </dt>
                   <dd className="mt-2 text-sm text-muted-foreground">
@@ -250,7 +250,7 @@ export default function Onboarding() {
             <dl className="grid grid-cols-2 divide-x divide-border overflow-hidden rounded-lg border border-border bg-card">
               <div className="p-4">
                 <dt className="text-sm text-muted-foreground">Goals</dt>
-                <dd className="font-display text-3xl font-medium">
+                <dd className="text-3xl font-semibold tracking-tight text-primary">
                   {goals.filter((g) => g.trim()).length}
                 </dd>
               </div>
@@ -258,7 +258,7 @@ export default function Onboarding() {
                 <dt className="text-sm text-muted-foreground">
                   Planned today
                 </dt>
-                <dd className="font-display text-3xl font-medium">
+                <dd className="text-3xl font-semibold tracking-tight text-primary">
                   {activities.filter((a) => a.trim()).length}
                 </dd>
               </div>

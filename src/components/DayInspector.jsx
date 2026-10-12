@@ -39,10 +39,10 @@ export default function DayInspector({ dateKey, dayData, todayKeyStr, className 
             <li key={a.id} className="flex items-start gap-2.5 text-sm">
               <span
                 className={cn(
-                  "mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full border-[1.5px]",
+                  "mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[calc(var(--radius)-6px)] border-[1.5px]",
                   a.completed
                     ? "border-primary bg-primary text-primary-foreground"
-                    : "border-muted-foreground/40",
+                    : "border-primary/60",
                 )}
               >
                 {a.completed && <Check className="h-2.5 w-2.5" strokeWidth={3.5} />}

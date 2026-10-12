@@ -110,7 +110,7 @@ export default function Goals() {
         <section aria-label="Progress" className="space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
             <p className="text-sm text-muted-foreground tabular-nums">
-              <span className="font-display text-2xl font-medium text-foreground">
+              <span className="text-2xl font-semibold text-primary">
                 {completed}
               </span>{" "}
               of {total} complete
@@ -167,8 +167,8 @@ export default function Goals() {
               >
                 <span
                   className={cn(
-                    "font-display text-[1.75rem] font-medium leading-none tabular-nums",
-                    done ? "text-primary" : "text-muted-foreground/40",
+                    "text-2xl font-semibold leading-none tracking-tight tabular-nums",
+                    done ? "text-primary" : "text-muted-foreground/50",
                   )}
                   aria-hidden="true"
                 >
@@ -200,7 +200,7 @@ export default function Goals() {
                           setStatus(g, done ? "active" : "completed")
                         }
                         className={cn(
-                          "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+                          "inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-xs font-medium transition-colors",
                           done
                             ? "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
                             : "border-border hover:border-primary hover:text-primary",

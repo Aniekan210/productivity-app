@@ -46,7 +46,7 @@ export default function AppearancePreview({ value }) {
       <ul className="mt-4 divide-y divide-border text-sm">
         <li className="flex items-center gap-2.5 py-2">
           <span
-            className="grid h-[18px] w-[18px] place-items-center rounded-full"
+            className="grid h-[18px] w-[18px] place-items-center rounded-sm"
             style={{ background: brand(), color: "hsl(var(--primary-foreground))" }}
           >
             <Check className="h-2.5 w-2.5" strokeWidth={3.5} />
@@ -56,7 +56,7 @@ export default function AppearancePreview({ value }) {
           </span>
         </li>
         <li className="flex items-center gap-2.5 py-2">
-          <span className="h-[18px] w-[18px] rounded-full border-[1.5px] border-muted-foreground/50" />
+          <span className="h-[18px] w-[18px] rounded-sm border-[1.5px] border-primary/70" />
           <span>Write the brief</span>
         </li>
       </ul>
@@ -69,7 +69,7 @@ export default function AppearancePreview({ value }) {
           Add activity
         </span>
         <span className="text-xs text-muted-foreground tabular-nums">
-          <span className="font-display text-base text-foreground">
+          <span className="text-base font-semibold text-primary">
             {WEEK_LEVELS.filter((l) => l === 1).length}
           </span>{" "}
           perfect days

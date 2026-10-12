@@ -117,13 +117,13 @@ export default function Activities() {
               <p className="text-sm text-muted-foreground">
                 {isToday ? "Today" : format(selected, "EEEE")}
               </p>
-              <h2 className="font-display text-[1.75rem] font-medium leading-tight tracking-tight">
+              <h2 className="font-display text-2xl font-medium leading-tight tracking-tight sm:text-[1.75rem]">
                 {format(selected, isToday ? "EEEE, MMMM d" : "MMMM d")}
               </h2>
             </div>
             {total > 0 && (
-              <p className="shrink-0 text-sm tabular-nums text-muted-foreground">
-                <span className="font-display text-xl font-medium text-foreground">
+              <p className="shrink-0 text-sm tabular-nums text-primary">
+                <span className="text-xl font-semibold">
                   {completed}
                 </span>
                 /{total} · {rate}%

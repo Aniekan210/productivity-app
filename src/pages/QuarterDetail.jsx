@@ -159,7 +159,7 @@ export default function QuarterDetail() {
           )}
           {goals.map((g, i) => (
             <li key={g.id} className="flex min-h-[3rem] items-center gap-3 py-1.5">
-              <span className="w-5 shrink-0 font-display text-sm tabular-nums text-muted-foreground">
+              <span className="w-5 shrink-0 text-sm font-medium tabular-nums text-muted-foreground">
                 {String(i + 1).padStart(2, "0")}
               </span>
               <span

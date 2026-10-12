@@ -105,10 +105,10 @@ export default function SummaryDialog({
                 <li key={g.id} className="flex items-center gap-3 py-2.5">
                   <span
                     className={cn(
-                      "grid h-5 w-5 shrink-0 place-items-center rounded-full border-[1.5px]",
+                      "grid h-5 w-5 shrink-0 place-items-center rounded-sm border-[1.5px]",
                       g.status === "completed"
                         ? "border-primary bg-primary text-primary-foreground"
-                        : "border-muted-foreground/40",
+                        : "border-primary/60",
                     )}
                   >
                     {g.status === "completed" && (
